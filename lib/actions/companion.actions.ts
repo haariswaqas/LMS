@@ -108,34 +108,31 @@ export const getUserCompanions = async (userId: string) => {
 }
 
 export const newCompanionPermissions = async () => {
-    const { userId, has } = await auth();
-    const supabase = createSupabaseClient();
+  const { userId, has } = await auth();
+  const supabase = createSupabaseClient();
 
-    let limit = 0;
+  // First, check if the user has a paid subscription or pro plan
+  if (has({ plan: "pro" }) || has({ plan: "premium" })) {
+    return true; // unlimited companions
+  }
 
-    if(has({ plan: 'pro' })) {
-        return true;
-    } else if(has({ feature: "3_companion_limit" })) {
-        limit = 3;
-    } else if(has({ feature: "10_companion_limit" })) {
-        limit = 10;
-    }
+  // Otherwise, determine allowed companion limit via feature flags
+  let limit = 3; // default free tier limit
+  if (has({ feature: "10_companion_limit" })) limit = 10;
 
-    const { data, error } = await supabase
-        .from('companions')
-        .select('id', { count: 'exact' })
-        .eq('author', userId)
+  // Count current companions
+  const { data, error } = await supabase
+    .from("companions")
+    .select("id", { count: "exact" })
+    .eq("author", userId);
 
-    if(error) throw new Error(error.message);
+  if (error) throw new Error(error.message);
 
-    const companionCount = data?.length;
+  const companionCount = data?.length || 0;
 
-    if(companionCount >= limit) {
-        return false
-    } else {
-        return true;
-    }
-}
+  return companionCount < limit;
+};
+
 
 // Bookmarks
 export const addBookmark = async (companionId: string, path: string) => {
