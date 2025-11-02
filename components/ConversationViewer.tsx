@@ -22,7 +22,7 @@ const ConversationViewer = ({
   companionName,
   userName,
   userImage,
-  subject,
+  
 }: ConversationViewerProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
